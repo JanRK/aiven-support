@@ -1,0 +1,724 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aiven-operator-webhook-service
+  namespace: aiven
+  labels:
+    app.kubernetes.io/name: aiven-operator
+    app.kubernetes.io/instance: aiven-operator
+    control-plane: controller-manager
+    app.kubernetes.io/version: "v0.2.0"
+spec:
+  ports:
+    - port: 443
+      targetPort: webhook
+      protocol: TCP
+      name: webhook
+  selector:
+    app.kubernetes.io/name: aiven-operator
+    app.kubernetes.io/instance: aiven-operator
+    control-plane: controller-manager
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aiven-operator
+  namespace: aiven
+  labels:
+    app.kubernetes.io/name: aiven-operator
+    app.kubernetes.io/instance: aiven-operator
+    control-plane: controller-manager
+    app.kubernetes.io/version: "v0.2.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: aiven-operator
+      app.kubernetes.io/instance: aiven-operator
+      control-plane: controller-manager
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: aiven-operator
+        app.kubernetes.io/instance: aiven-operator
+        control-plane: controller-manager
+    spec:
+      terminationGracePeriodSeconds: 10
+
+      containers:
+        - name: aiven-operator
+          image: "aivenoy/aiven-operator:v0.2.0"
+          imagePullPolicy: IfNotPresent
+          command:
+          - /manager
+          args: 
+          - --enable-leader-election
+          env:
+
+          ports:
+            - name: metrics
+              containerPort: 8080
+              protocol: TCP
+            - name: webhook
+              containerPort: 9443
+              protocol: TCP
+
+          livenessProbe:
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            tcpSocket:
+              port: metrics
+
+          readinessProbe:
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            tcpSocket:
+              port: metrics
+
+          resources:
+            limits:
+              cpu: 100m
+              memory: 128Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          volumeMounts:
+          - mountPath: /tmp/k8s-webhook-server/serving-certs
+            name: webhook-server-cert
+            readOnly: true
+      volumes:
+      - name: webhook-server-cert
+        secret:
+          defaultMode: 420
+          secretName: webhook-server-cert
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: aiven-operator-webhook-certificate
+  namespace: aiven
+  labels:
+    app.kubernetes.io/name: aiven-operator
+    app.kubernetes.io/instance: aiven-operator
+    control-plane: controller-manager
+    app.kubernetes.io/version: "v0.2.0"
+spec:
+  dnsNames:
+  - aiven-operator-webhook-service.aiven.svc
+  - aiven-operator-webhook-service.aiven.svc.cluster.local
+  issuerRef:
+    kind: Issuer
+    name: aiven-operator-selfsigned-issuer
+  secretName: webhook-server-cert
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: aiven-operator-selfsigned-issuer
+  namespace: aiven
+  labels:
+    app.kubernetes.io/name: aiven-operator
+    app.kubernetes.io/instance: aiven-operator
+    control-plane: controller-manager
+    app.kubernetes.io/version: "v0.2.0"
+spec:
+  selfSigned: {}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: aiven/aiven-operator-webhook-certificate
+  name: aiven-operator-mutating-webhook-configuration
+  namespace: aiven
+  labels:
+    app.kubernetes.io/name: aiven-operator
+    app.kubernetes.io/instance: aiven-operator
+    control-plane: controller-manager
+    app.kubernetes.io/version: "v0.2.0"
+
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: aiven-operator-webhook-service
+      namespace: aiven
+      path: /mutate-aiven-io-v1alpha1-connectionpool
+  failurePolicy: Fail
+  name: mconnectionpool.kb.io
+  rules:
+  - apiGroups:
+    - aiven.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - connectionpools
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: aiven-operator-webhook-service
+      namespace: aiven
+      path: /mutate-aiven-io-v1alpha1-database
+  failurePolicy: Fail
+  name: mdatabase.kb.io
+  rules:
+  - apiGroups:
+    - aiven.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - databases
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: aiven-operator-webhook-service
+      namespace: aiven
+      path: /mutate-aiven-io-v1alpha1-kafka
+  failurePolicy: Fail
+  name: mkafka.kb.io
+  rules:
+  - apiGroups:
+    - aiven.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - kafkas
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: aiven-operator-webhook-service
+      namespace: aiven
+      path: /mutate-aiven-io-v1alpha1-kafkaacl
+  failurePolicy: Fail
+  name: mkafkaacl.kb.io
+  rules:
+  - apiGroups:
+    - aiven.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - kafkaacls
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: aiven-operator-webhook-service
+      namespace: aiven
+      path: /mutate-aiven-io-v1alpha1-kafkaconnect
+  failurePolicy: Fail
+  name: mkafkaconnect.kb.io
+  rules:
+  - apiGroups:
+    - aiven.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - kafkaconnects
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: aiven-operator-webhook-service
+      namespace: aiven
+      path: /mutate-aiven-io-v1alpha1-kafkaconnector
+  failurePolicy: Fail
+  name: mkafkaconnector.kb.io
+  rules:
+  - apiGroups:
+    - aiven.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - kafkaconnectors
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: aiven-operator-webhook-service
+      namespace: aiven
+      path: /mutate-aiven-io-v1alpha1-kafkaschema
+  failurePolicy: Fail
+  name: mkafkaschema.kb.io
+  rules:
+  - apiGroups:
+    - aiven.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - kafkaschemas
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: aiven-operator-webhook-service
+      namespace: aiven
+      path: /mutate-aiven-io-v1alpha1-kafkatopic
+  failurePolicy: Fail
+  name: mkafkatopic.kb.io
+  rules:
+  - apiGroups:
+    - aiven.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - kafkatopics
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: aiven-operator-webhook-service
+      namespace: aiven
+      path: /mutate-aiven-io-v1alpha1-postgresql
+  failurePolicy: Fail
+  name: mpg.kb.io
+  rules:
+  - apiGroups:
+    - aiven.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - postgresqls
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: aiven-operator-webhook-service
+      namespace: aiven
+      path: /mutate-aiven-io-v1alpha1-project
+  failurePolicy: Fail
+  name: mproject.kb.io
+  rules:
+  - apiGroups:
+    - aiven.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - projects
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: aiven-operator-webhook-service
+      namespace: aiven
+      path: /mutate-aiven-io-v1alpha1-projectvpc
+  failurePolicy: Fail
+  name: mprojectvpc.kb.io
+  rules:
+  - apiGroups:
+    - aiven.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - projectvpcs
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: aiven-operator-webhook-service
+      namespace: aiven
+      path: /mutate-aiven-io-v1alpha1-redis
+  failurePolicy: Fail
+  name: mredis.kb.io
+  rules:
+  - apiGroups:
+    - aiven.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - redis
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: aiven-operator-webhook-service
+      namespace: aiven
+      path: /mutate-aiven-io-v1alpha1-serviceintegration
+  failurePolicy: Fail
+  name: mserviceintegration.kb.io
+  rules:
+  - apiGroups:
+    - aiven.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - serviceintegrations
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: aiven-operator-webhook-service
+      namespace: aiven
+      path: /mutate-aiven-io-v1alpha1-serviceuser
+  failurePolicy: Fail
+  name: mserviceuser.kb.io
+  rules:
+  - apiGroups:
+    - aiven.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - serviceusers
+  sideEffects: None
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: aiven/aiven-operator-webhook-certificate
+  name: aiven-operator-validating-webhook-configuration
+  namespace: aiven
+  labels:
+    app.kubernetes.io/name: aiven-operator
+    app.kubernetes.io/instance: aiven-operator
+    control-plane: controller-manager
+    app.kubernetes.io/version: "v0.2.0"
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: aiven-operator-webhook-service
+      namespace: aiven
+      path: /validate-aiven-io-v1alpha1-connectionpool
+  failurePolicy: Fail
+  name: vconnectionpool.kb.io
+  rules:
+  - apiGroups:
+    - aiven.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+    resources:
+    - connectionpools
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: aiven-operator-webhook-service
+      namespace: aiven
+      path: /validate-aiven-io-v1alpha1-database
+  failurePolicy: Fail
+  name: vdatabase.kb.io
+  rules:
+  - apiGroups:
+    - aiven.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+    resources:
+    - databases
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: aiven-operator-webhook-service
+      namespace: aiven
+      path: /validate-aiven-io-v1alpha1-kafka
+  failurePolicy: Fail
+  name: vkafka.kb.io
+  rules:
+  - apiGroups:
+    - aiven.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+    resources:
+    - kafkas
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: aiven-operator-webhook-service
+      namespace: aiven
+      path: /validate-aiven-io-v1alpha1-kafkaacl
+  failurePolicy: Fail
+  name: vkafkaacl.kb.io
+  rules:
+  - apiGroups:
+    - aiven.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - kafkaacls
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: aiven-operator-webhook-service
+      namespace: aiven
+      path: /validate-aiven-io-v1alpha1-kafkaconnect
+  failurePolicy: Fail
+  name: vkafkaconnect.kb.io
+  rules:
+  - apiGroups:
+    - aiven.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+    resources:
+    - kafkaconnects
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: aiven-operator-webhook-service
+      namespace: aiven
+      path: /validate-aiven-io-v1alpha1-kafkaconnector
+  failurePolicy: Fail
+  name: vkafkaconnector.kb.io
+  rules:
+  - apiGroups:
+    - aiven.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+    resources:
+    - kafkaconnectors
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: aiven-operator-webhook-service
+      namespace: aiven
+      path: /validate-aiven-io-v1alpha1-kafkaschema
+  failurePolicy: Fail
+  name: vkafkaschema.kb.io
+  rules:
+  - apiGroups:
+    - aiven.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - kafkaschemas
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: aiven-operator-webhook-service
+      namespace: aiven
+      path: /validate-aiven-io-v1alpha1-kafkatopic
+  failurePolicy: Fail
+  name: vkafkatopic.kb.io
+  rules:
+  - apiGroups:
+    - aiven.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+    resources:
+    - kafkatopics
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: aiven-operator-webhook-service
+      namespace: aiven
+      path: /validate-aiven-io-v1alpha1-postgresql
+  failurePolicy: Fail
+  name: vpg.kb.io
+  rules:
+  - apiGroups:
+    - aiven.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+    resources:
+    - postgresqls
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: aiven-operator-webhook-service
+      namespace: aiven
+      path: /validate-aiven-io-v1alpha1-project
+  failurePolicy: Fail
+  name: vproject.kb.io
+  rules:
+  - apiGroups:
+    - aiven.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+    resources:
+    - projects
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: aiven-operator-webhook-service
+      namespace: aiven
+      path: /validate-aiven-io-v1alpha1-projectvpc
+  failurePolicy: Fail
+  name: vprojectvpc.kb.io
+  rules:
+  - apiGroups:
+    - aiven.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - projectvpcs
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: aiven-operator-webhook-service
+      namespace: aiven
+      path: /validate-aiven-io-v1alpha1-redis
+  failurePolicy: Fail
+  name: vredis.kb.io
+  rules:
+  - apiGroups:
+    - aiven.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+    resources:
+    - redis
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: aiven-operator-webhook-service
+      namespace: aiven
+      path: /validate-aiven-io-v1alpha1-serviceintegration
+  failurePolicy: Fail
+  name: vserviceintegration.kb.io
+  rules:
+  - apiGroups:
+    - aiven.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - serviceintegrations
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: aiven-operator-webhook-service
+      namespace: aiven
+      path: /validate-aiven-io-v1alpha1-serviceuser
+  failurePolicy: Fail
+  name: vserviceuser.kb.io
+  rules:
+  - apiGroups:
+    - aiven.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - serviceusers
+  sideEffects: None

@@ -1,0 +1,428 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: aiven-operator-role
+  namespace: aiven
+  labels:
+    app.kubernetes.io/name: aiven-operator
+    app.kubernetes.io/instance: aiven-operator
+    control-plane: controller-manager
+    app.kubernetes.io/version: "v0.2.0"
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - aiven.io
+  resources:
+  - connectionpools
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - aiven.io
+  resources:
+  - connectionpools/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - aiven.io
+  resources:
+  - databases
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - aiven.io
+  resources:
+  - databases/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - aiven.io
+  resources:
+  - kafkaacls
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - aiven.io
+  resources:
+  - kafkaacls/status
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - watch
+- apiGroups:
+  - aiven.io
+  resources:
+  - kafkaconnectors
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - aiven.io
+  resources:
+  - kafkaconnectors/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - aiven.io
+  resources:
+  - kafkaconnects
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - aiven.io
+  resources:
+  - kafkaconnects/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - aiven.io
+  resources:
+  - kafkas
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - aiven.io
+  resources:
+  - kafkas/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - aiven.io
+  resources:
+  - kafkaschemas
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - aiven.io
+  resources:
+  - kafkaschemas/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - aiven.io
+  resources:
+  - kafkatopics
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - aiven.io
+  resources:
+  - kafkatopics/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - aiven.io
+  resources:
+  - postgresqls
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - aiven.io
+  resources:
+  - postgresqls/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - aiven.io
+  resources:
+  - projects
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - aiven.io
+  resources:
+  - projects/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - aiven.io
+  resources:
+  - projectvpcs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - aiven.io
+  resources:
+  - projectvpcs/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - aiven.io
+  resources:
+  - redis
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - aiven.io
+  resources:
+  - redis/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - aiven.io
+  resources:
+  - serviceintegrations
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - aiven.io
+  resources:
+  - serviceintegrations/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - aiven.io
+  resources:
+  - serviceusers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - aiven.io
+  resources:
+  - serviceusers/status
+  verbs:
+  - get
+  - update
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - create
+  - get
+  - list
+  - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: aiven-operator-rolebinding
+  namespace: aiven
+  labels:
+    app.kubernetes.io/name: aiven-operator
+    app.kubernetes.io/instance: aiven-operator
+    control-plane: controller-manager
+    app.kubernetes.io/version: "v0.2.0"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: aiven-operator-role
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: aiven
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: aiven-operator-election-role
+  namespace: aiven
+  labels:
+    app.kubernetes.io/name: aiven-operator
+    app.kubernetes.io/instance: aiven-operator
+    control-plane: controller-manager
+    app.kubernetes.io/version: "v0.2.0"
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - configmaps/status
+  verbs:
+  - get
+  - update
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: aiven-operator-election-rolebinding
+  namespace: aiven
+  labels:
+    app.kubernetes.io/name: aiven-operator
+    app.kubernetes.io/instance: aiven-operator
+    control-plane: controller-manager
+    app.kubernetes.io/version: "v0.2.0"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: aiven-operator-election-role
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: aiven
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: aiven-operator-secrets
+  namespace: aiven
+  labels:
+    app.kubernetes.io/name: aiven-operator
+    app.kubernetes.io/instance: aiven-operator
+    control-plane: controller-manager
+    app.kubernetes.io/version: "v0.2.0"
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: aiven-operator-secrets-rolebinding
+  namespace: aiven
+  labels:
+    app.kubernetes.io/name: aiven-operator
+    app.kubernetes.io/instance: aiven-operator
+    control-plane: controller-manager
+    app.kubernetes.io/version: "v0.2.0"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: aiven-operator-secrets
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: aiven
